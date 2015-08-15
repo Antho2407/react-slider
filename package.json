@@ -1,8 +1,8 @@
 {
-  "name": "react-radial-menu",
+  "name": "react-slider",
   "version": "0.1.0",
-  "description": "ReactJS circular menu",
-  "main": "dist/build/react-radial-menu.min.js",
+  "description": "ReactJS slider",
+  "main": "dist/build/react-slider.min.js",
   "dependencies": {
     "globalize": "^1.0.0",
     "gulp": "^3.8.11",
@@ -11,7 +11,6 @@
     "gulp-streamify": "0.0.5",
     "gulp-uglify": "^1.2.0",
     "react": "^0.13.0",
-    "react-widgets": "^2.6.0",
     "requirejs-plugins": "^1.0.2",
     "velocity-animate": "^1.2.2",
     "vinyl-source-stream": "^1.1.0"
@@ -29,8 +28,7 @@
     "wrappy": "^1.0.1"
   },
   "keywords": [
-    "circular",
-    "menu",
+    "slider",
     "react",
     "reactjs",
     "velocityjs",

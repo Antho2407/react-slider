@@ -4,69 +4,132 @@ require('velocity-animate/velocity.ui');
 
 var canvas = null;
 var context = null;
+var images = null;
 
+var isDragging = false;
+var moveXAmount = 0;
+var startX = 0;
+var oldX = 0;
+var canvasOffset=null;
+var offsetX=null;
+
+// This parts is useful to know the real length of the slider
+var limitX = 0;
+var lastWidth = 0;
+
+// Calculate aspect ratio 
+// We want the maximum width/height
+function getAspectRatio(srcWidth, srcHeight, maxWidth, maxHeight) {
+  var ratio = Math.min(maxWidth / srcWidth, maxHeight / srcHeight);
+  var bestWidth = srcWidth*ratio;
+  var bestHeight = srcHeight*ratio;
+  return { width: bestWidth, height: bestHeight };
+}
+
+// Redraw pictures
+function refreshcanvas(){
+	// Clear cancas
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	var length = images.length;
+	limitX = 0;
+
+	// For each picture
+	for (var i = 0; i < length; i++) {
+		
+		// Draw the picture with the good ratio
+		var img = images[i];
+    	var imgSize = getAspectRatio(img.width, img.height, canvas.width, canvas.height);
+    	
+    	// Center the picture
+    	var centerHeight = (canvas.height - imgSize.height) / 2
+  		
+  		// Draw the pictures next to each others
+  		context.drawImage(img,(limitX) + moveXAmount,centerHeight,imgSize.width, imgSize.height);
+  		lastWidth = imgSize.width;;
+  		limitX += imgSize.width;
+	}
+}
+
+// Slider component
 var Slider = React.createClass({
 
-	loadCss:function(url) {
-	    // var link = document.createElement("link");
-	    // link.type = "text/css";
-	    // link.rel = "stylesheet";
-	    // link.href = url;
-	    // document.getElementsByTagName("head")[0].appendChild(link);
-	},
-
+	// Preload pictures
 	loadImages: function(sources, callback) {
-	    var images = [];
+	    images = [];
 	    var loadedImages = 0;
-	    //var numImages = 0;
 	    var length = sources.length;
 
+	    // For each picture 
+	    // Load the source
 		for (var i = 0; i < length; i++) {
-			console.log(sources[i]);
 		    images[i] = new Image();
 	    	images[i].onload = function() {
-	    		console.log("load " + loadedImages);
+		        
+	    		// When all the pictures ar loaded
+	    		// Fire callback
 		        if(++loadedImages >= length) {
-		        	callback(images);
+		        	callback();
 		        }
 	      	};
 	      	images[i].src = sources[i];
 		}
-
-	    // get num of sources
-	    // for(var src in sources) {
-	    // 	numImages++;
-	    // }
 	},
 
 	getDefaultProps: function() {
 		return {
 			images : []
 		};
-		// return {
-		// 	animation: "transition.swoopIn", 
-		// 	duration: 600,
-		// 	stagger: 100,
-		// 	radius: 200, 
-		// 	easing: [0.175, 0.885, 0.32, 1.275],
-		// 	distance: -1
-		// };
 	},
 
 	componentWillMount: function(){
-		// this.loadCss("css/app.css");
 	},
 
 	componentDidMount:function(){
-		$("#wrapper-canvas").html('<canvas id="myCanvas" width="200" height="250"></canvas>');
-		canvas = document.getElementById('myCanvas');
+		// Build canvas
+		document.getElementById("wrapper-canvas").innerHTML = '<canvas id="myCanvas" width="600" height="400"></canvas>';
+		canvas = document.getElementById("myCanvas");
 		context = canvas.getContext('2d');
 
-		this.loadImages(this.props.images, function(images) {
-			var length = images.length;
-			for (var i = 0; i < length; i++) {
-				context.drawImage(images[i], (i*200), 30, 200, 200);
-			}
+		// Keep offset to avoid bad mouse position
+		canvasOffset=$("#myCanvas").offset();
+		offsetX=canvasOffset.left;
+		canvas.addEventListener("after:render", function(){ canvas.calcOffset() });
+		
+		// Avoid double click bug
+		canvas.onselectstart = function () { return false; }
+
+		// Mousedown -> begin dragging
+		canvas.onmousedown = function(event){
+			isDragging = true;
+			// Keep the start click
+			startX = parseInt(event.clientX-offsetX);
+		};
+
+		// Mouseup -> finish dragging
+		window.onmouseup = function(){
+			oldX = moveXAmount;
+		    isDragging = false;
+		};
+
+		// Mousemove -> slide pictures
+		window.onmousemove = function(event) {
+		    if( isDragging == true )
+		    {   
+		    	// Calculate the new position
+		    	// The reference is the startclick and not the mouse position itself
+		        var moveXtmp = parseInt(event.clientX-offsetX) - startX + oldX;
+		        
+		        // Avoid sliding if we reach the limits
+		        if (moveXtmp > (-(limitX-lastWidth))&&(moveXtmp<=0)){
+			        moveXAmount = moveXtmp;
+			        refreshcanvas();
+		    	}
+		    }
+		};
+
+		// Load pictures
+		this.loadImages(this.props.images, function() {
+			refreshcanvas();
       	});
 	},
 
